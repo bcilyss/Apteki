@@ -19,6 +19,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
@@ -36,7 +37,6 @@ public class MainActivity extends AppCompatActivity {
     Button btn1, btn2;
     ArrayAdapter<String> arrayAdapter;
     SearchView searchView;
-    Menu menu;
     String searchText = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,35 +52,81 @@ public class MainActivity extends AppCompatActivity {
         btn1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //Toast.makeText(MainActivity.this,"Dzialam", Toast.LENGTH_SHORT).show();
                 RequestQueue queue = Volley.newRequestQueue(MainActivity.this);
                 String url = "https://rejestrymedyczne.ezdrowie.gov.pl/api/pharmacies/search?page=0&size=10&sortField=dateOfChanged&sortDirection=DESC&pharmacyCity=Tychy";
+                JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                        new Response.Listener<JSONObject>() {
+                            @Override
+                            public void onResponse(JSONObject response) {
+                                try {
+                                    JSONArray jsonArray = response.getJSONArray("75");
 
-                JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        //List<String> nazwyAptek = new ArrayList<>();
-                        String nazwaApteki = "";
-                        try {
+                                    for (int i = 0; i <jsonArray.length(); i++){
+                                        JSONObject apteki = jsonArray.getJSONObject(i);
+                                        String nazwaApteki = apteki.getString("name");
+                                        String nrTel = apteki.getString("phoneNumber");
+                                        JSONObject adres = response.getJSONObject("address");
+                                        for (int j = 0; j< adres.length(); j++){
+                                            String adresUlicaApteki = adres.getString("street");
+                                            String numerIlucyApteki = adres.getString("homeNumber");
 
-                                JSONObject info = response.getJSONObject(0);
-                                nazwaApteki = info.getString("name");
-                                //nazwyAptek.add(nazwaApteki);
+                                        }
 
-
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                        Toast.makeText(MainActivity.this,"Nazwa apteki" + nazwaApteki, Toast.LENGTH_SHORT).show();
-
-                    }
-
-                }, new Response.ErrorListener() {
+                                        Toast.makeText(MainActivity.this, nazwaApteki, Toast.LENGTH_SHORT).show();
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        // Obsługa błędu
+                        error.printStackTrace();
                     }
                 });
-                queue.add(request);
+
+
+//                JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+//                    @Override
+//                    public void onResponse(JSONObject response) {
+//                        Toast.makeText(MainActivity.this,"Responce: " + response.toString(), Toast.LENGTH_SHORT).show();
+//                    }
+//                }, new Response.ErrorListener() {
+//                    @Override
+//                    public void onErrorResponse(VolleyError error) {
+//
+//                    }
+//                });
+
+
+//                JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
+//                    @Override
+//                    public void onResponse(JSONArray response) {
+//                        //List<String> nazwyAptek = new ArrayList<>();
+//                        String nazwaApteki = "";
+//                        try {
+//
+//                                JSONObject info = response.getJSONObject(0);
+//                                nazwaApteki = info.getString("name");
+//                                //nazwyAptek.add(nazwaApteki);
+//
+//
+//                        } catch (JSONException e) {
+//                            e.printStackTrace();
+//                        }
+//                        Toast.makeText(MainActivity.this,"Nazwa apteki" + nazwaApteki, Toast.LENGTH_SHORT).show();
+//
+//                    }
+//
+//                }, new Response.ErrorListener() {
+//                    @Override
+//                    public void onErrorResponse(VolleyError error) {
+//                        // Obsługa błędu
+//                    }
+//                });
+//
+//                queue.add(request);
 
                 //StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
                   //  @Override
@@ -113,11 +159,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
         getMenuInflater().inflate(R.menu.menu,menu);
-        this.menu = menu;
         MenuItem menuItem = menu.findItem(R.id.action_search);
         SearchView searchView = (SearchView) menuItem.getActionView();
         searchView.setQueryHint("Wpisz nazwę miasta");
