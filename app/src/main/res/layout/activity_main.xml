@@ -26,7 +26,8 @@
     <ListView
         android:id="@+id/listview"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="650dp"
+        android:foregroundGravity="top"
         app:layout_constraintBottom_toTopOf="@+id/btn1"
         tools:layout_editor_absoluteX="65dp" />
 

@@ -5,6 +5,8 @@ import androidx.appcompat.widget.SearchView;
 
 import android.app.DownloadManager;
 import android.content.ClipData;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -12,6 +14,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -22,13 +25,17 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.gms.maps.SupportMapFragment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayAdapter<String> arrayAdapter;
     SearchView searchView;
     String searchText = "";
+    TextView mTextviewresult;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,34 +54,71 @@ public class MainActivity extends AppCompatActivity {
         btn1 = findViewById(R.id.btn1);
         btn2 = findViewById(R.id.btn2);
         listView = findViewById(R.id.listview);
-        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,name);
+        List<String> data = new ArrayList<String>();
+        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,data);
         listView.setAdapter(arrayAdapter);
+
+
+
+
 
         btn1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //Toast.makeText(MainActivity.this,"Dzialam", Toast.LENGTH_SHORT).show();
                 RequestQueue queue = Volley.newRequestQueue(MainActivity.this);
-                String url = "https://rejestrymedyczne.ezdrowie.gov.pl/api/pharmacies/search?page=0&size=10&sortField=dateOfChanged&sortDirection=DESC&pharmacyCity=Tychy";
+                String url = "https://rejestrymedyczne.ezdrowie.gov.pl/api/pharmacies/search?page=0&size=10&sortField=dateOfChanged&sortDirection=DESC&pharmacyCity=" + searchText;
                 JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                         new Response.Listener<JSONObject>() {
                             @Override
                             public void onResponse(JSONObject response) {
                                 try {
-                                    JSONArray jsonArray = response.getJSONArray("75");
+                                    arrayAdapter.clear();
+                                    arrayAdapter.add("By znaleźć aptekę na mapie, wystarczy wpisać jej adres w powyższe pole wyszukiwania oraz użyć przycisku MAPA");
 
+                                    //zmienny indeks array!
+                                    String rr = response.toString();
+                                    JSONObject jo = new JSONObject(rr);
+                                    Iterator<String> keys = response.keys();
+                                    String pierwszyKlucz = keys.next();
+                                    JSONArray jsonArray = response.getJSONArray(pierwszyKlucz);
                                     for (int i = 0; i <jsonArray.length(); i++){
                                         JSONObject apteki = jsonArray.getJSONObject(i);
                                         String nazwaApteki = apteki.getString("name");
-                                        String nrTel = apteki.getString("phoneNumber");
-                                        JSONObject adres = response.getJSONObject("address");
-                                        for (int j = 0; j< adres.length(); j++){
-                                            String adresUlicaApteki = adres.getString("street");
-                                            String numerIlucyApteki = adres.getString("homeNumber");
-
+                                        String nrTel = null;
+                                        String kod = null;
+                                        String ulica = null;
+                                        String numer = null;
+                                        String miasto = null;
+                                        String czyOtwartaWNN = null;
+                                        if (nazwaApteki != "" || kod == "NIEAKTYWNA"){
+                                            nrTel = apteki.getString("phoneNumber");
+                                            //JSONObject adres = response.getJSONObject("address");
+                                            JSONObject kodwstep = apteki.getJSONObject("pharmacyStatus");
+                                            kod = kodwstep.getString("code");
+                                            //probowalam petla - wystarczy rozpakowac jsonobject by dostac sie do nastepnego
+                                            JSONObject adres = apteki.getJSONObject("address");
+                                            ulica = adres.getString("street");
+                                            numer = adres.getString("homeNumber");
+                                            miasto = adres.getString("city");
+                                            czyOtwartaWNN = apteki.getString("openOnSundaysNonTrade");
+                                            if (czyOtwartaWNN == "true"){
+                                                czyOtwartaWNN = "Apteka jest otwarta w niedziele niehandlowe";
+                                            }
+                                            else{
+                                                czyOtwartaWNN = "Apteka jest zamknięta w niedziele niehandlowe";
+                                            }
+                                            //Toast.makeText(MainActivity.this, nazwaApteki, Toast.LENGTH_SHORT).show();
+                                            arrayAdapter.add("Nazwa apteki: "+nazwaApteki + ", " + "\n" +
+                                                    "Numer kontaktowy: " + nrTel + "\n" + "Status: " + kod + "\n" + "Lokalizacja: " + "\n" +
+                                                    ulica + " " + numer + ", " + miasto + "\n" + czyOtwartaWNN);
+                                        }
+                                        else{
+                                            nazwaApteki = "Brak danych";
                                         }
 
-                                        Toast.makeText(MainActivity.this, nazwaApteki, Toast.LENGTH_SHORT).show();
+
+
                                     }
                                 } catch (JSONException e) {
                                     e.printStackTrace();
@@ -85,6 +130,9 @@ public class MainActivity extends AppCompatActivity {
                         error.printStackTrace();
                     }
                 });
+                queue.add(request);
+
+
 
 
 //                JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
@@ -148,14 +196,25 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
         btn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this,"Clicked me 2" +searchText, Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity.this,"Clicked me 2" +searchText, Toast.LENGTH_SHORT).show();
+                if (searchText.equals("")){
+                    Toast.makeText(MainActivity.this,"Wpisz adres by otworzyć mapę",Toast.LENGTH_SHORT).show();
+                }
+                else{
 
+                    Uri uri = Uri.parse("https://www.google.com/maps/dir/"+  "/"+  searchText);
+                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                    intent.setPackage("com.google.android.apps.maps");
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+
+                }
             }
         });
-
 
     }
 
