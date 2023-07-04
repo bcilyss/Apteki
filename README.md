@@ -1,4 +1,4 @@
 # Apteki
 Aplikacja wyszukuje aptek w wybranym mieście, wyświetla je w listView w formie 
 "Apteka-czy_jest_aktywna_-adres-numer_kontaktowy"
-Występuje możliwość wyświetlenia aptek na mapie w formie pinezek
+Po wyszukaniu aptek, istnieje możliwość wyświetlenia wybranego adresu w Google Maps na telefonie poprzez wpisanie adresu oraz uaktywnienie przycisnu 'MAPA'.
